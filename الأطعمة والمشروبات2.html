@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الأطعمة والمشروبات - لعبة تفاعلية</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #FF9800;
+            --accent-color: #2196F3;
+            --danger-color: #f44336;
+            --background-color: #eef2f5;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            user-select: none;
+        }
+
+        .game-card {
+            background: white;
+            width: 100%;
+            max-width: 600px;
+            border-radius: 25px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            padding: 25px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.2rem;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .score-board {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+
+        /* Seksyen Gambar (Placeholder SVG mesra kanak-kanak & ceria) */
+        .image-container {
+            width: 100%;
+            height: 180px;
+            background-color: #fff9e6;
+            border: 4px dashed #ffe0b2;
+            border-radius: 20px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .image-container svg {
+            width: 100px;
+            height: 100px;
+        }
+
+        /* Kotak Slot Jawapan */
+        .answer-container {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 25px;
+            min-height: 55px;
+            flex-wrap: wrap;
+        }
+
+        .answer-slot {
+            width: 45px;
+            height: 45px;
+            border: 3px solid #bdc3c7;
+            border-radius: 12px;
+            background: #fafafa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+            transition: all 0.2s;
+        }
+
+        .answer-slot.filled {
+            border-color: var(--accent-color);
+            background-color: #e3f2fd;
+        }
+
+        /* Grid Papan Kekunci Huruf Arab (Statik & Kekal) */
+        .keyboard-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            margin-bottom: 25px;
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 15px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .letter-btn {
+            background: white;
+            border: 2px solid #dcdde1;
+            border-radius: 10px;
+            padding: 8px 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2f3640;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #dcdde1;
+            transition: all 0.1s;
+        }
+
+        .letter-btn:active {
+            transform: translateY(3px);
+            box-shadow: none;
+        }
+
+        /* Butang Kawalan Bawah */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            color: white;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+            transition: transform 0.1s;
+        }
+
+        .btn:active { transform: translateY(2px); box-shadow: none; }
+        .btn-check { background-color: var(--primary-color); }
+        .btn-reset { background-color: var(--secondary-color); }
+        .btn-delete { background-color: var(--danger-color); }
+        .btn-next { background-color: var(--accent-color); visibility: hidden; }
+
+        /* Mesej Maklum Balas */
+        #feedback {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 15px 0;
+            height: 35px;
+        }
+        .correct-msg { color: var(--primary-color); animation: bounce 0.5s ease; }
+        .incorrect-msg { color: var(--danger-color); animation: shake 0.3s ease; }
+
+        /* Skrin Penamat (Tamat Permainan) */
+        .end-screen {
+            display: none;
+        }
+
+        /* Animasi ringkas */
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        /* Responsif untuk Skrin Kecil */
+        @media (max-width: 480px) {
+            .keyboard-grid { grid-template-columns: repeat(6, 1fr); }
+            .letter-btn { font-size: 1.3rem; padding: 6px 0; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-card" id="game-view">
+    <h1>الأطعمة والمشروبات</h1>
+    <div class="score-board">المستوى: <span id="current-level">1</span> / <span id="total-levels">0</span> | النقاط: <span id="score">0</span></div>
+    
+    <div class="image-container" id="image-box">
+        </div>
+
+    <div class="answer-container" id="answer-slots"></div>
+
+    <div class="keyboard-grid">
+        <button class="letter-btn" onclick="addLetter('ا')">ا</button>
+        <button class="letter-btn" onclick="addLetter('ب')">ب</button>
+        <button class="letter-btn" onclick="addLetter('ت')">ت</button>
+        <button class="letter-btn" onclick="addLetter('ث')">ث</button>
+        <button class="letter-btn" onclick="addLetter('ج')">ج</button>
+        <button class="letter-btn" onclick="addLetter('ح')">ح</button>
+        <button class="letter-btn" onclick="addLetter('خ')">خ</button>
+        <button class="letter-btn" onclick="addLetter('د')">د</button>
+        <button class="letter-btn" onclick="addLetter('ذ')">ذ</button>
+        <button class="letter-btn" onclick="addLetter('ر')">ر</button>
+        <button class="letter-btn" onclick="addLetter('ز')">ز</button>
+        <button class="letter-btn" onclick="addLetter('س')">س</button>
+        <button class="letter-btn" onclick="addLetter('ش')">ش</button>
+        <button class="letter-btn" onclick="addLetter('ص')">ص</button>
+        <button class="letter-btn" onclick="addLetter('ض')">ض</button>
+        <button class="letter-btn" onclick="addLetter('ط')">ط</button>
+        <button class="letter-btn" onclick="addLetter('ظ')">ظ</button>
+        <button class="letter-btn" onclick="addLetter('ع')">ع</button>
+        <button class="letter-btn" onclick="addLetter('غ')">غ</button>
+        <button class="letter-btn" onclick="addLetter('ف')">ف</button>
+        <button class="letter-btn" onclick="addLetter('ق')">ق</button>
+        <button class="letter-btn" onclick="addLetter('ك')">ك</button>
+        <button class="letter-btn" onclick="addLetter('ل')">ل</button>
+        <button class="letter-btn" onclick="addLetter('م')">م</button>
+        <button class="letter-btn" onclick="addLetter('ن')">ن</button>
+        <button class="letter-btn" onclick="addLetter('و')">و</button>
+        <button class="letter-btn" onclick="addLetter('ي')">ي</button>
+        <button class="letter-btn" onclick="addLetter('ء')">ء</button>
+        <button class="letter-btn" onclick="addLetter('أ')">أ</button>
+        <button class="letter-btn" onclick="addLetter('إ')">إ</button>
+        <button class="letter-btn" onclick="addLetter('آ')">آ</button>
+        <button class="letter-btn" onclick="addLetter('ؤ')">ؤ</button>
+        <button class="letter-btn" onclick="addLetter('ئ')">ئ</button>
+        <button class="letter-btn" onclick="addLetter('ة')">ة</button>
+        <button class="letter-btn" onclick="addLetter('ى')">ى</button>
+        <button class="letter-btn" onclick="addLetter('لا')">لا</button>
+    </div>
+
+    <div id="feedback"></div>
+
+    <div class="controls-grid">
+        <button class="btn btn-check" onclick="checkAnswer()">تحقق</button>
+        <button class="btn btn-reset" onclick="resetWord()">إعادة</button>
+        <button class="btn btn-delete" onclick="deleteLastLetter()">⌫ حذف حرف</button>
+        <button class="btn btn-next" id="next-btn" onclick="nextQuestion()">التالي</button>
+    </div>
+</div>
+
+<div class="game-card end-screen" id="end-view">
+    <h1 style="font-size: 3rem;">🎉 أحسنت صنعاً! 🎉</h1>
+    <p style="font-size: 1.5rem; color: #555;">لقد أكملت جميع الكلمات بنجاح!</p>
+    <div style="font-size: 2.2rem; font-weight: bold; color: var(--primary-color); margin: 25px 0;">
+        النتيجة الكلية: <span id="final-score">0</span>
+    </div>
+    <button class="btn btn-reset" style="width: 100%; padding: 15px; font-size: 1.5rem;" onclick="restartGame()">إعادة اللعب</button>
+</div>
+
+<script>
+    // Senarai kosa kata rujukan rasmi (Mempunyai teks paparan bertanda, dan teks semakan tanpa tanda)
+    const wordList = [
+        { display: "تُفَّاح", core: "تفاح", hint: "🍎" },
+        { display: "مُوز", core: "موز", hint: "🍌" },
+        { display: "بُرْتُقَال", core: "برتقال", hint: "🍊" },
+        { display: "عِنَب", core: "عنب", hint: "🍇" },
+        { display: "بَطِّيخ", core: "بطيخ", hint: "🍉" },
+        { display: "مَانْجُو", core: "مانجو", hint: "🥭" },
+        { display: "أَرُزّ", core: "ارز", hint: "🍚" },
+        { display: "خُبْز", core: "خبز", hint: "🍞" },
+        { display: "بَيْض", core: "بيض", hint: "🥚" },
+        { display: "سَمَك", core: "سمك", hint: "🐟" },
+        { display: "دَجَاج", core: "دجاج", hint: "🍗" },
+        { display: "لَحْم", core: "لحم", hint: "🥩" },
+        { display: "حَلِيب", core: "حليب", hint: "🥛" },
+        { display: "مَاء", core: "ماء", hint: "💧" },
+        { display: "عَصِير", core: "عصير", hint: "🍹" },
+        { display: "شَاي", core: "شاي", hint: "🍵" },
+        { display: "قَهْوَة", core: "قهوة", hint: "☕" },
+        { display: "آيْس كَرِيم", core: "آيسكريم", hint: "🍦" } // Jarak dibuang untuk memudahkan klik grid kotak
+    ];
+
+    let randomizedQuestions = [];
+    let currentQuestionIndex = 0;
+    let userLetters = [];
+    let score = 0;
+    let audioCtx = null;
+
+    // Fungsi Pengacakan Soalan (Fisher-Yates Shuffle)
+    function shuffleQuestions() {
+        randomizedQuestions = [...wordList];
+        for (let i = randomizedQuestions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [randomizedQuestions[i], randomizedQuestions[j]] = [randomizedQuestions[j], randomizedQuestions[i]];
+        }
+    }
+
+    // Memulakan Pusingan Soalan
+    function initGame() {
+        shuffleQuestions();
+        currentQuestionIndex = 0;
+        score = 0;
+        document.getElementById('total-levels').innerText = randomizedQuestions.length;
+        document.getElementById('score').innerText = score;
+        document.getElementById('game-view').style.display = "block";
+        document.getElementById('end-view').style.display = "none";
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        userLetters = [];
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('next-btn').style.styleAction = "hidden";
+        document.getElementById('next-btn').style.visibility = "hidden";
+        document.getElementById('current-level').innerText = currentQuestionIndex + 1;
+
+        const currentWord = randomizedQuestions[currentQuestionIndex];
+        
+        // Membina Grafik Visual secara Dinamik (Guna Emoji Besar berciri Kanak-kanak)
+        document.getElementById('image-box').innerHTML = `<div style="font-size: 5rem;">${currentWord.hint}</div>`;
+
+        // Membina Ruang Slot Jawapan Kosong
+        const slotsContainer = document.getElementById('answer-slots');
+        slotsContainer.innerHTML = '';
+        for (let i = 0; i < currentWord.core.length; i++) {
+            const slot = document.createElement('div');
+            slot.className = 'answer-slot';
+            slot.id = `slot-${i}`;
+            slotsContainer.appendChild(slot);
+        }
+    }
+
+    // Fungsi Tambah Huruf (Apabila butang huruf diklik)
+    function addLetter(letter) {
+        const currentWord = randomizedQuestions[currentQuestionIndex];
+        if (userLetters.length < currentWord.core.length) {
+            userLetters.push(letter);
+            updateSlots();
+        }
+    }
+
+    // Fungsi Padam Satu Huruf Terakhir (Backspace ⌫)
+    function deleteLastLetter() {
+        if (userLetters.length > 0) {
+            userLetters.pop();
+            updateSlots();
+        }
+    }
+
+    // Fungsi Padam Semua Huruf (إعادة)
+    function resetWord() {
+        userLetters = [];
+        updateSlots();
+        document.getElementById('feedback').innerText = "";
+    }
+
+    // Kemas kini paparan slot jawapan teks murid
+    function updateSlots() {
+        const currentWord = randomizedQuestions[currentQuestionIndex];
+        for (let i = 0; i < currentWord.core.length; i++) {
+            const slot = document.getElementById(`slot-${i}`);
+            if (userLetters[i]) {
+                slot.innerText = userLetters[i];
+                slot.classList.add('filled');
+            } else {
+                slot.innerText = '';
+                slot.classList.remove('filled');
+            }
+        }
+    }
+
+    // Semakan Jawapan (تحقق)
+    function checkAnswer() {
+        const currentWord = randomizedQuestions[currentQuestionIndex];
+        const combinedUserAnswer = userLetters.join('');
+        const feedbackDiv = document.getElementById('feedback');
+
+        if (combinedUserAnswer === currentWord.core) {
+            feedbackDiv.innerHTML = "<span class='correct-msg'>✅ أحسنت!</span>";
+            playTone(true);
+            score += 10;
+            document.getElementById('score').innerText = score;
+            document.getElementById('next-btn').style.visibility = "visible";
+            
+            // Auto-ke pusingan seterusnya selepas 1.2 saat untuk kelancaran permainan
+            setTimeout(() => {
+                nextQuestion();
+            }, 1200);
+        } else {
+            feedbackDiv.innerHTML = "<span class='incorrect-text incorrect-msg'>❌ حاول مرة أخرى</span>";
+            playTone(false);
+        }
+    }
+
+    // Peralihan ke Soalan Seterusnya
+    function nextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < randomizedQuestions.length) {
+            loadQuestion();
+        } else {
+            showEndScreen();
+        }
+    }
+
+    // Skrin Rumusan & Tamat Permainan
+    function showEndScreen() {
+        document.getElementById('game-view').style.display = "none";
+        document.getElementById('end-view').style.display = "block";
+        document.getElementById('final-score').innerText = score;
+    }
+
+    function restartGame() {
+        initGame();
+    }
+
+    // Sintesis Bunyi Tanpa Fail Luar (Web Audio API) - Berfungsi 100% tanpa internet
+    function playTone(isSuccess) {
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (isSuccess) {
+                // Bunyi gembira (Dua nada menaik cepat)
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.25);
+            } else {
+                // Bunyi salah (Satu nada rendah berat)
+                osc.frequency.setValueAtTime(180, audioCtx.currentTime); 
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.2);
+            }
+        } catch (e) {
+            console.log("Audio not supported or blocked by browser policy");
+        }
+    }
+
+    // Mulakan program secara automatik sebaik sahaja fail dibuka
+    window.onload = initGame;
+</script>
+
+</body>
+</html>
